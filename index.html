@@ -1,0 +1,1848 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Classification Game</title>
+    <style>
+        /* ── Google Fonts ── */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Exo+2:wght@300;400;600;700&display=swap');
+
+        /* ── CSS Variables ── */
+        :root {
+            --bg: #070b14;
+            --surface: #0d1526;
+            --card: #111e35;
+            --border: #1e3a5f;
+            --accent1: #00e5ff;
+            --accent2: #7c3aed;
+            --accent3: #f59e0b;
+            --correct: #10b981;
+            --wrong: #ef4444;
+            --text: #e2e8f0;
+            --muted: #64748b;
+            --glow: 0 0 20px rgba(0, 229, 255, .35);
+        }
+
+        /* ── Reset ── */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* ── Particle canvas ── */
+        #particles {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ── Layout wrapper ── */
+        .wrapper {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 24px 16px 48px;
+        }
+
+        /* ── Header ── */
+        header {
+            text-align: center;
+            margin-bottom: 28px;
+            animation: fadeDown .7s ease both;
+        }
+
+        header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.4rem, 4vw, 2.2rem);
+            color: var(--accent1);
+            text-shadow: var(--glow);
+            letter-spacing: 2px;
+        }
+
+        header p {
+            color: var(--muted);
+            font-size: .95rem;
+            margin-top: 6px;
+        }
+
+        /* ── Progress bar ── */
+        .progress-wrap {
+            width: 100%;
+            max-width: 700px;
+            margin-bottom: 22px;
+            animation: fadeDown .8s ease both;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: .82rem;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .progress-bar-bg {
+            height: 8px;
+            border-radius: 99px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 99px;
+            background: linear-gradient(90deg, var(--accent2), var(--accent1));
+            transition: width .5s cubic-bezier(.4, 0, .2, 1);
+            box-shadow: 0 0 10px var(--accent1);
+        }
+
+        /* ── Score badge ── */
+        .score-badge {
+            font-family: 'Orbitron', sans-serif;
+            font-size: .85rem;
+            color: var(--accent3);
+            letter-spacing: 1px;
+        }
+
+        /* ── Tool card ── */
+        .tool-card {
+            width: 100%;
+            max-width: 700px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px 24px 24px;
+            text-align: center;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, .5);
+            animation: fadeUp .5s ease both;
+        }
+
+        .tool-label {
+            font-size: .75rem;
+            letter-spacing: 3px;
+            color: var(--accent2);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .tool-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.6rem, 5vw, 2.4rem);
+            color: var(--accent1);
+            text-shadow: var(--glow);
+            margin-bottom: 6px;
+        }
+
+        .tool-hint {
+            font-size: .82rem;
+            color: var(--muted);
+        }
+
+        /* ── Divider ── */
+        .divider {
+            width: 100%;
+            max-width: 700px;
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 22px 0;
+        }
+
+        /* ── Section labels ── */
+        .section-title {
+            font-size: .72rem;
+            letter-spacing: 3px;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        /* ── Option grids ── */
+        .options-group {
+            width: 100%;
+            max-width: 700px;
+            margin-bottom: 18px;
+        }
+
+        .options-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .options-grid.type-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .options-grid.branch-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        /* ── Option button ── */
+        .opt-btn {
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 8px;
+            cursor: pointer;
+            font-family: 'Exo 2', sans-serif;
+            font-size: clamp(.78rem, 2.5vw, .92rem);
+            font-weight: 600;
+            color: var(--text);
+            transition: all .2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .opt-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--accent1) 0%, var(--accent2) 100%);
+            opacity: 0;
+            transition: opacity .2s ease;
+            border-radius: 12px;
+        }
+
+        .opt-btn:hover {
+            border-color: var(--accent1);
+            transform: translateY(-2px);
+            box-shadow: var(--glow);
+        }
+
+        .opt-btn:hover::before {
+            opacity: .08;
+        }
+
+        .opt-btn.selected {
+            border-color: var(--accent1);
+            background: rgba(0, 229, 255, .12);
+            color: var(--accent1);
+            box-shadow: var(--glow);
+        }
+
+        .opt-btn.selected::before {
+            opacity: .12;
+        }
+
+        /* ── Submit button ── */
+        .submit-btn {
+            width: 100%;
+            max-width: 700px;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--accent2), var(--accent1));
+            border: none;
+            border-radius: 14px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            letter-spacing: 2px;
+            color: #fff;
+            cursor: pointer;
+            transition: transform .2s, box-shadow .2s;
+            box-shadow: 0 4px 20px rgba(0, 229, 255, .3);
+            margin-top: 4px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 229, 255, .5);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .game-top-actions {
+            width: 100%;
+            max-width: 700px;
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+        }
+
+        .exit-btn {
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: 1px solid rgba(239, 68, 68, .6);
+            background: rgba(239, 68, 68, .12);
+            color: #fecaca;
+            font-family: 'Orbitron', sans-serif;
+            font-size: .78rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: transform .2s, box-shadow .2s, background .2s;
+        }
+
+        .exit-btn:hover {
+            transform: translateY(-2px);
+            background: rgba(239, 68, 68, .2);
+            box-shadow: 0 0 14px rgba(239, 68, 68, .3);
+        }
+
+        /* ── Modal overlay ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: rgba(7, 11, 20, .85);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 40px 32px;
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            transform: scale(.8);
+            transition: transform .3s cubic-bezier(.34, 1.56, .64, 1);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .6);
+        }
+
+        .modal-overlay.show .modal-box {
+            transform: scale(1);
+        }
+
+        .modal-emoji {
+            font-size: 3.5rem;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .modal-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            margin-bottom: 8px;
+        }
+
+        .modal-title.correct {
+            color: var(--correct);
+            text-shadow: 0 0 16px rgba(16, 185, 129, .5);
+        }
+
+        .modal-title.wrong {
+            color: var(--wrong);
+            text-shadow: 0 0 16px rgba(239, 68, 68, .5);
+        }
+
+        .modal-sub {
+            color: var(--muted);
+            font-size: .9rem;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .modal-btn {
+            padding: 12px 32px;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: .85rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .modal-btn.next-btn {
+            background: linear-gradient(135deg, var(--accent2), var(--accent1));
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(0, 229, 255, .3);
+        }
+
+        .modal-btn.retry-btn {
+            background: rgba(239, 68, 68, .15);
+            color: var(--wrong);
+            border: 1px solid var(--wrong);
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .name-modal {
+            z-index: 220;
+        }
+
+        .name-modal .modal-box {
+            max-width: 500px;
+            text-align: left;
+        }
+
+        .name-modal-title {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--accent1);
+            text-shadow: var(--glow);
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        .name-modal-sub {
+            color: var(--muted);
+            line-height: 1.6;
+            margin-bottom: 16px;
+            font-size: .92rem;
+        }
+
+        .name-form {
+            display: grid;
+            gap: 10px;
+        }
+
+        .name-input {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            color: var(--text);
+            font-family: 'Exo 2', sans-serif;
+            font-size: .95rem;
+            outline: none;
+            transition: border-color .2s, box-shadow .2s;
+        }
+
+        .name-input:focus {
+            border-color: var(--accent1);
+            box-shadow: var(--glow);
+        }
+
+        .name-error {
+            min-height: 18px;
+            color: var(--wrong);
+            font-size: .82rem;
+            letter-spacing: .2px;
+        }
+
+        .name-submit {
+            justify-self: start;
+            padding: 12px 22px;
+        }
+
+        /* ── Hint bot ── */
+        .bot-assistant {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 90;
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .hint-bulb {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-size: 1.5rem;
+            background: radial-gradient(circle at 30% 20%, rgba(100, 116, 139, .35), rgba(17, 30, 53, .96));
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 22px rgba(0, 0, 0, .4);
+            animation: botBob 2.8s ease-in-out infinite;
+            cursor: pointer;
+            transition: border-color .2s, box-shadow .2s, transform .2s, background .2s;
+        }
+
+        .hint-bulb.active {
+            border-color: rgba(245, 158, 11, .8);
+            background: radial-gradient(circle at 30% 20%, rgba(245, 158, 11, .55), rgba(17, 30, 53, .96));
+            box-shadow: 0 10px 22px rgba(0, 0, 0, .4), 0 0 18px rgba(245, 158, 11, .65);
+        }
+
+        .bot-bubble {
+            max-width: min(300px, calc(100vw - 95px));
+            background: rgba(17, 30, 53, .98);
+            border: 1px solid rgba(0, 229, 255, .55);
+            border-radius: 14px;
+            color: var(--text);
+            font-size: .84rem;
+            line-height: 1.45;
+            padding: 10px 12px;
+            position: relative;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, .35);
+            transform: translateY(10px);
+            opacity: 0;
+            transition: opacity .3s ease, transform .3s ease;
+        }
+
+        .bot-bubble::before {
+            content: '';
+            position: absolute;
+            right: -9px;
+            bottom: 14px;
+            width: 14px;
+            height: 14px;
+            transform: rotate(45deg);
+            background: rgba(17, 30, 53, .98);
+            border-right: 1px solid rgba(0, 229, 255, .55);
+            border-top: 1px solid rgba(0, 229, 255, .55);
+        }
+
+        .bot-bubble.show {
+            opacity: 1;
+            transform: translateY(0);
+            animation: bubbleFloat 3.2s ease-in-out infinite;
+        }
+
+        .hint-bulb,
+        .bot-bubble {
+            cursor: pointer;
+        }
+
+        /* ── Anime guide (center-right) ── */
+        .anime-guide {
+            position: fixed;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%) translateX(24px);
+            z-index: 95;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: min(360px, 42vw);
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity .3s ease, transform .3s ease;
+        }
+
+        .anime-guide.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) translateX(0);
+        }
+
+        .anime-bubble {
+            background: rgba(17, 30, 53, .98);
+            border: 1px solid rgba(245, 158, 11, .65);
+            border-radius: 14px;
+            color: #fff7e6;
+            font-size: .84rem;
+            line-height: 1.45;
+            padding: 10px 12px;
+            position: relative;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, .4);
+            opacity: 0;
+            transform: translateX(10px);
+            transition: opacity .3s ease, transform .3s ease;
+            max-width: 250px;
+        }
+
+        .anime-bubble::after {
+            content: '';
+            position: absolute;
+            right: -9px;
+            bottom: 22px;
+            width: 14px;
+            height: 14px;
+            transform: rotate(45deg);
+            background: rgba(17, 30, 53, .98);
+            border-right: 1px solid rgba(245, 158, 11, .65);
+            border-top: 1px solid rgba(245, 158, 11, .65);
+        }
+
+        .anime-bubble.show {
+            opacity: 1;
+            transform: translateX(0);
+            animation: animeBubbleFloat 3s ease-in-out infinite;
+        }
+
+        .anime-character {
+            width: 82px;
+            height: 120px;
+            position: relative;
+            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, .38));
+            animation: animeBob 2.6s ease-in-out infinite;
+        }
+
+        .anime-head {
+            width: 66px;
+            height: 66px;
+            background: #f8c9b4;
+            border-radius: 50%;
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            border: 2px solid rgba(255, 255, 255, .22);
+            overflow: hidden;
+        }
+
+        .anime-hair {
+            position: absolute;
+            top: -6px;
+            left: -2px;
+            width: 72px;
+            height: 36px;
+            background: linear-gradient(180deg, #7c3aed, #4c1d95);
+            border-radius: 50% 50% 42% 42%;
+        }
+
+        .anime-eye {
+            position: absolute;
+            width: 9px;
+            height: 12px;
+            background: #00e5ff;
+            border-radius: 50%;
+            top: 28px;
+            box-shadow: inset 0 0 0 2px rgba(6, 20, 33, .6);
+        }
+
+        .anime-eye.left {
+            left: 20px;
+        }
+
+        .anime-eye.right {
+            right: 20px;
+        }
+
+        .anime-mouth {
+            position: absolute;
+            left: 50%;
+            top: 44px;
+            width: 14px;
+            height: 7px;
+            margin-left: -7px;
+            border-bottom: 2px solid #9f1239;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .anime-body {
+            position: absolute;
+            top: 64px;
+            left: 18px;
+            width: 48px;
+            height: 54px;
+            border-radius: 16px 16px 8px 8px;
+            background: linear-gradient(180deg, #00e5ff, #0369a1);
+            border: 1px solid rgba(255, 255, 255, .2);
+        }
+
+        .anime-badge {
+            position: absolute;
+            top: 76px;
+            left: 34px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #f59e0b;
+            box-shadow: 0 0 12px rgba(245, 158, 11, .6);
+        }
+
+        /* ── Shake animation ── */
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20% {
+                transform: translateX(-8px);
+            }
+
+            40% {
+                transform: translateX(8px);
+            }
+
+            60% {
+                transform: translateX(-6px);
+            }
+
+            80% {
+                transform: translateX(6px);
+            }
+        }
+
+        .shake {
+            animation: shake .4s ease;
+        }
+
+        /* ── Confetti ── */
+        .confetti-piece {
+            position: fixed;
+            top: -10px;
+            width: 10px;
+            height: 14px;
+            border-radius: 2px;
+            opacity: 0;
+            animation: confettiFall 1.6s ease-in forwards;
+            z-index: 200;
+            pointer-events: none;
+        }
+
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(0) rotateZ(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(110vh) rotateZ(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* ── Final screen ── */
+        #final-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            width: 100%;
+            max-width: 700px;
+            animation: fadeUp .6s ease both;
+        }
+
+        #final-screen.show {
+            display: flex;
+        }
+
+        .final-trophy {
+            font-size: 5rem;
+            margin-bottom: 16px;
+        }
+
+        .final-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.4rem, 4vw, 2rem);
+            color: var(--accent1);
+            text-shadow: var(--glow);
+            margin-bottom: 8px;
+        }
+
+        .final-score {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2rem, 8vw, 4rem);
+            color: var(--accent3);
+            margin: 16px 0;
+        }
+
+        .final-msg {
+            color: var(--muted);
+            font-size: 1rem;
+            margin-bottom: 32px;
+            line-height: 1.7;
+        }
+
+        .restart-btn {
+            padding: 16px 48px;
+            background: linear-gradient(135deg, var(--accent2), var(--accent1));
+            border: none;
+            border-radius: 14px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: .95rem;
+            letter-spacing: 2px;
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 229, 255, .3);
+            transition: transform .2s, box-shadow .2s;
+        }
+
+        .restart-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 229, 255, .5);
+        }
+
+        .final-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 6px;
+            margin-bottom: 24px;
+        }
+
+        .review-btn {
+            padding: 14px 22px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: linear-gradient(135deg, rgba(124, 58, 237, .28), rgba(0, 229, 255, .18));
+            color: var(--text);
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: transform .2s, box-shadow .2s, border-color .2s;
+        }
+
+        .review-btn:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent1);
+            box-shadow: var(--glow);
+        }
+
+        .review-wrap {
+            width: 100%;
+            margin-top: 4px;
+            display: none;
+            opacity: 0;
+            transform: translateY(16px);
+            transition: opacity .35s ease, transform .35s ease;
+        }
+
+        .review-wrap.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .review-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .review-title {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--accent1);
+            letter-spacing: 1px;
+            font-size: .95rem;
+        }
+
+        .review-hint {
+            color: var(--muted);
+            font-size: .84rem;
+        }
+
+        .review-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .review-card {
+            background: linear-gradient(180deg, rgba(17, 30, 53, .95), rgba(13, 21, 38, .95));
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 8px 26px rgba(0, 0, 0, .28);
+        }
+
+        .review-summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 14px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            transition: background .2s ease;
+        }
+
+        .review-summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .review-card[open] .review-summary,
+        .review-summary:hover {
+            background: rgba(0, 229, 255, .06);
+        }
+
+        .review-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .review-index {
+            min-width: 32px;
+            height: 32px;
+            border-radius: 999px;
+            display: grid;
+            place-items: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: .75rem;
+            border: 1px solid var(--border);
+            color: var(--accent1);
+            background: rgba(0, 229, 255, .08);
+        }
+
+        .review-tool {
+            font-weight: 700;
+            color: var(--text);
+            font-size: .94rem;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 420px;
+        }
+
+        .review-status {
+            font-size: .74rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border-radius: 999px;
+            padding: 6px 10px;
+            border: 1px solid;
+            font-family: 'Orbitron', sans-serif;
+            white-space: nowrap;
+        }
+
+        .review-status.correct {
+            color: var(--correct);
+            border-color: rgba(16, 185, 129, .6);
+            background: rgba(16, 185, 129, .12);
+        }
+
+        .review-status.wrong {
+            color: var(--wrong);
+            border-color: rgba(239, 68, 68, .6);
+            background: rgba(239, 68, 68, .12);
+        }
+
+        .review-body {
+            border-top: 1px solid rgba(30, 58, 95, .85);
+            padding: 14px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .review-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            text-align: left;
+            line-height: 1.5;
+            font-size: .9rem;
+        }
+
+        .review-label {
+            font-weight: 700;
+            color: var(--accent3);
+            min-width: 130px;
+        }
+
+        .review-value {
+            color: var(--text);
+            flex: 1;
+        }
+
+        .review-reason {
+            background: rgba(124, 58, 237, .12);
+            border: 1px solid rgba(124, 58, 237, .4);
+            border-radius: 10px;
+            padding: 10px;
+            color: var(--text);
+            text-align: left;
+            font-size: .88rem;
+            line-height: 1.6;
+        }
+
+        /* ── Game area ── */
+        #game-area {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+
+        /* ── Fade animations ── */
+        @keyframes fadeDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes botBob {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
+        @keyframes bubbleFloat {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-4px);
+            }
+        }
+
+        @keyframes animeBob {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-6px);
+            }
+        }
+
+        @keyframes animeBubbleFloat {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            50% {
+                transform: translateX(-4px);
+            }
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 480px) {
+            .options-grid.type-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .options-grid.branch-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .final-actions {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .review-btn,
+            .restart-btn {
+                width: 100%;
+            }
+
+            .review-tool {
+                max-width: 180px;
+            }
+
+            .bot-assistant {
+                right: 10px;
+                bottom: 10px;
+            }
+
+            .hint-bulb {
+                width: 48px;
+                height: 48px;
+                font-size: 1.25rem;
+            }
+
+            .bot-bubble {
+                font-size: .78rem;
+                padding: 8px 10px;
+            }
+
+            .anime-guide {
+                right: 8px;
+                top: auto;
+                bottom: 86px;
+                transform: translateX(20px);
+                max-width: min(320px, 76vw);
+            }
+
+            .anime-guide.show {
+                transform: translateX(0);
+            }
+
+            .anime-bubble {
+                font-size: .76rem;
+                max-width: 210px;
+            }
+
+            .anime-character {
+                width: 70px;
+                height: 102px;
+            }
+
+            .anime-head {
+                width: 56px;
+                height: 56px;
+            }
+
+            .anime-body {
+                top: 56px;
+                height: 44px;
+            }
+
+            .anime-badge {
+                top: 66px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="particles"></canvas>
+
+    <div class="wrapper">
+
+        <!-- Header -->
+        <header>
+            <h1>⚡ AI CLASSIFICATION GAME</h1>
+            <p id="subtitle-text">Classify each AI tool by its <strong>Type</strong> and <strong>Branch</strong></p>
+        </header>
+
+        <!-- Game area -->
+        <div id="game-area">
+
+            <div class="game-top-actions">
+                <button class="exit-btn" type="button" onclick="exitGame()">EXIT GAME</button>
+            </div>
+
+            <!-- Progress -->
+            <div class="progress-wrap">
+                <div class="progress-label">
+                    <span id="q-label">Question 1 of 10</span>
+                    <span class="score-badge">⭐ SCORE: <span id="score-val">0</span></span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progress-fill" style="width:10%"></div>
+                </div>
+            </div>
+
+            <!-- Tool card -->
+            <div class="tool-card" id="tool-card">
+                <div class="tool-label">🤖 Identify this AI Tool</div>
+                <div class="tool-name" id="tool-name">ChatGPT</div>
+                <div class="tool-hint">Select the correct Type and Branch below</div>
+            </div>
+
+            <hr class="divider" />
+
+            <!-- Type options -->
+            <div class="options-group">
+                <div class="section-title">🧠 Type of AI</div>
+                <div class="options-grid type-grid" id="type-grid">
+                    <button class="opt-btn" data-group="type" data-val="Narrow AI">Narrow AI</button>
+                    <button class="opt-btn" data-group="type" data-val="General AI">General AI</button>
+                    <button class="opt-btn" data-group="type" data-val="Super AI">Super AI</button>
+                </div>
+            </div>
+
+            <!-- Branch options -->
+            <div class="options-group">
+                <div class="section-title">🌿 Branch of AI</div>
+                <div class="options-grid branch-grid" id="branch-grid">
+                    <button class="opt-btn" data-group="branch" data-val="Machine Learning">Machine Learning</button>
+                    <button class="opt-btn" data-group="branch" data-val="NLP">Natural Language Processing</button>
+                    <button class="opt-btn" data-group="branch" data-val="Computer Vision">Computer Vision</button>
+                    <button class="opt-btn" data-group="branch" data-val="Robotics">Robotics</button>
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <button class="submit-btn" id="submit-btn" disabled>SUBMIT ANSWER</button>
+
+        </div><!-- /game-area -->
+
+        <!-- Final screen -->
+        <div id="final-screen">
+            <div class="final-trophy" id="final-trophy">🏆</div>
+            <div class="final-title">GAME COMPLETE!</div>
+            <div class="final-score" id="final-score">0 / 10</div>
+            <div class="final-msg" id="final-msg">Well done!</div>
+
+            <div class="final-actions">
+                <button class="review-btn" id="review-toggle-btn" onclick="toggleReview()">📋 REVIEW ANSWERS</button>
+                <button class="restart-btn" onclick="restartGame()">🔄 PLAY AGAIN</button>
+            </div>
+
+            <div class="review-wrap" id="review-wrap">
+                <div class="review-head">
+                    <div class="review-title">Answer Review Cards</div>
+                    <div class="review-hint">Tap a card to see reasoning and corrections</div>
+                </div>
+                <div class="review-grid" id="review-grid"></div>
+            </div>
+        </div>
+
+    </div><!-- /wrapper -->
+
+    <!-- Start Name Modal -->
+    <div class="modal-overlay name-modal" id="name-modal">
+        <div class="modal-box">
+            <div class="name-modal-title">Welcome to the Challenge</div>
+            <div class="name-modal-sub">Enter your name to begin. Your questions will be shuffled each time you play.
+            </div>
+            <form class="name-form" id="name-form">
+                <input class="name-input" id="player-name-input" type="text" maxlength="24" placeholder="Type your name"
+                    autocomplete="name" />
+                <div class="name-error" id="name-error"></div>
+                <button class="modal-btn next-btn name-submit" type="submit">START GAME</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Result Modal -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal-box" id="modal-box">
+            <span class="modal-emoji" id="modal-emoji">✅</span>
+            <div class="modal-title" id="modal-title">Correct!</div>
+            <div class="modal-sub" id="modal-sub">Both answers are right.</div>
+            <button class="modal-btn" id="modal-action-btn" onclick="nextQuestion()">NEXT →</button>
+        </div>
+    </div>
+
+    <div class="bot-assistant" id="hint-bot" aria-hidden="true">
+        <div class="bot-bubble" id="bot-bubble">Tap the bulb to summon or hide the anime helper.</div>
+        <button class="hint-bulb" id="hint-toggle-btn" type="button" aria-label="Toggle anime helper"
+            aria-pressed="false">💡</button>
+    </div>
+
+    <div class="anime-guide" id="anime-guide" aria-hidden="true">
+        <div class="anime-bubble" id="anime-bubble">I am your guide. I give focused hints for the current question.
+        </div>
+        <div class="anime-character">
+            <div class="anime-head">
+                <div class="anime-hair"></div>
+                <div class="anime-eye left"></div>
+                <div class="anime-eye right"></div>
+                <div class="anime-mouth"></div>
+            </div>
+            <div class="anime-body"></div>
+            <div class="anime-badge"></div>
+        </div>
+    </div>
+
+    <script>
+        // ─────────────────────────────────────────
+        // DATA
+        // ─────────────────────────────────────────
+        const questions = [
+            { tool: "ChatGPT", type: "General AI", branch: "Machine Learning + NLP + Computer Vision" },
+            { tool: "Google Maps", type: "Narrow AI", branch: "Machine Learning" },
+            { tool: "Netflix", type: "Narrow AI", branch: "Machine Learning" },
+            { tool: "Face Unlock", type: "Narrow AI", branch: "Computer Vision" },
+            { tool: "Roomba", type: "Narrow AI", branch: "Robotics" },
+            { tool: "Google Translate", type: "Narrow AI", branch: "NLP" },
+            { tool: "Self Driving Car", type: "General AI", branch: "Machine Learning + Computer Vision + Robotics" },
+            { tool: "YouTube Recommendations", type: "Narrow AI", branch: "Machine Learning" },
+            { tool: "Siri / Alexa", type: "General AI", branch: "NLP + Machine Learning" },
+            { tool: "Google Lens", type: "Narrow AI", branch: "Computer Vision" },
+            { tool: "Spam Email Filter", type: "Narrow AI", branch: "Machine Learning" },
+            { tool: "Chess AI", type: "Narrow AI", branch: "Machine Learning" },
+            { tool: "Smart CCTV Camera", type: "Narrow AI", branch: "Computer Vision" },
+            { tool: "Human-like Robot Teacher", type: "General AI", branch: "Robotics + NLP + Machine Learning" },
+            { tool: "Future Super Intelligence", type: "Super AI", branch: "All Branches" }
+        ];
+
+        // ─────────────────────────────────────────
+        // STATE
+        // ─────────────────────────────────────────
+        let currentQ = 0;
+        let score = 0;
+        let selectedType = null;
+        let selectedBranches = new Set();
+        let answered = false;
+        let answerLog = [];
+        let playerName = '';
+
+        const reasoningByTool = {
+            "ChatGPT": "It handles language plus image understanding, so NLP and Computer Vision both apply with ML at the core.",
+            "Google Maps": "Route prediction and ETA optimization rely heavily on pattern learning from traffic and user behavior data.",
+            "Netflix": "Recommendation engines learn from watch history and similarity patterns, which is a classic ML use case.",
+            "Face Unlock": "It detects and matches facial features from images, which is a Computer Vision task.",
+            "Roomba": "It senses surroundings and moves physically in the environment, fitting Robotics.",
+            "Google Translate": "Its primary goal is understanding and generating human language across languages, which is NLP.",
+            "Self Driving Car": "It combines perception (vision), decision models (ML), and real-world control (robotics).",
+            "YouTube Recommendations": "Suggested videos are ranked from behavior signals using machine learning models.",
+            "Siri / Alexa": "Voice assistants depend on language understanding plus learned intent prediction.",
+            "Google Lens": "Recognizing objects/text from camera input is a Computer Vision capability.",
+            "Spam Email Filter": "It classifies emails using patterns learned from labeled examples, a standard ML classifier task.",
+            "Chess AI": "It evaluates positions and chooses moves using learned heuristics/search strategies.",
+            "Smart CCTV Camera": "Detecting people, motion, and events from video frames is Computer Vision.",
+            "Human-like Robot Teacher": "A teaching robot needs physical interaction (robotics), language interaction (NLP), and adaptive learning (ML).",
+            "Future Super Intelligence": "A super-intelligent system is typically modeled as integrating all major AI branches together."
+        };
+
+        function getExpectedBranches(q) {
+            const parts = q.branch
+                .split('+')
+                .map(v => v.trim())
+                .filter(Boolean);
+
+            if (parts.includes('All Branches')) {
+                return ['Machine Learning', 'NLP', 'Computer Vision', 'Robotics'];
+            }
+
+            return parts;
+        }
+
+        // ─────────────────────────────────────────
+        // DOM REFS
+        // ─────────────────────────────────────────
+        const toolNameEl = document.getElementById('tool-name');
+        const qLabelEl = document.getElementById('q-label');
+        const scoreValEl = document.getElementById('score-val');
+        const progressFill = document.getElementById('progress-fill');
+        const submitBtn = document.getElementById('submit-btn');
+        const modal = document.getElementById('modal');
+        const modalEmoji = document.getElementById('modal-emoji');
+        const modalTitle = document.getElementById('modal-title');
+        const modalSub = document.getElementById('modal-sub');
+        const modalActionBtn = document.getElementById('modal-action-btn');
+        const modalBox = document.getElementById('modal-box');
+        const gameArea = document.getElementById('game-area');
+        const finalScreen = document.getElementById('final-screen');
+        const finalScore = document.getElementById('final-score');
+        const finalMsg = document.getElementById('final-msg');
+        const finalTrophy = document.getElementById('final-trophy');
+        const reviewWrap = document.getElementById('review-wrap');
+        const reviewGrid = document.getElementById('review-grid');
+        const reviewToggleBtn = document.getElementById('review-toggle-btn');
+        const subtitleText = document.getElementById('subtitle-text');
+        const nameModal = document.getElementById('name-modal');
+        const nameForm = document.getElementById('name-form');
+        const playerNameInput = document.getElementById('player-name-input');
+        const nameError = document.getElementById('name-error');
+        const botBubble = document.getElementById('bot-bubble');
+        const hintToggleBtn = document.getElementById('hint-toggle-btn');
+        const animeBubble = document.getElementById('anime-bubble');
+        const animeGuide = document.getElementById('anime-guide');
+        let botHintTimer = null;
+        let animeHintsEnabled = false;
+
+        function shuffleQuestions() {
+            for (let i = questions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [questions[i], questions[j]] = [questions[j], questions[i]];
+            }
+        }
+
+        function formatBranchList(list) {
+            if (!list || list.length === 0) return 'None selected';
+            return list.join(' + ');
+        }
+
+        function getReasoning(q) {
+            return reasoningByTool[q.tool] || 'This tool is classified by matching its main capability to the most relevant AI branch and type.';
+        }
+
+        function getQuestionHint(q) {
+            const branches = getExpectedBranches(q);
+            if (branches.length > 1) return 'This tool blends multiple branches. Select every matching branch, no extras.';
+            if (q.type === 'Super AI') return 'Only one tool is Super AI. Think futuristic and all-branch intelligence.';
+            if (branches.includes('NLP')) return 'Language understanding is your clue here. Look for NLP in the branch selection.';
+            if (branches.includes('Computer Vision')) return 'If it sees faces, objects, or video frames, Computer Vision is likely needed.';
+            if (branches.includes('Robotics')) return 'Physical movement and interaction with the world usually points to Robotics.';
+            return 'Recommendation, prediction, and pattern-learning tools usually map to Machine Learning.';
+        }
+
+        function getAnimeHint(q) {
+            const toolHints = {
+                "ChatGPT": "This model can process text and images. Choose General AI and include ML + NLP + Computer Vision.",
+                "Google Maps": "Think prediction from traffic data. Type is Narrow AI, and branch is Machine Learning.",
+                "Netflix": "This is recommendation logic. It learns user taste patterns, so pick Machine Learning.",
+                "Face Unlock": "The clue is visual identity from a face image. Computer Vision is essential.",
+                "Roomba": "It acts in the physical world using sensors and motion, so Robotics fits.",
+                "Google Translate": "The core task is understanding and generating human language, so NLP.",
+                "Self Driving Car": "This needs perception + control + learning. Select CV, Robotics, and ML together.",
+                "YouTube Recommendations": "Another recommendation system: strong Narrow AI with Machine Learning.",
+                "Siri / Alexa": "Voice assistant means NLP plus learning-based intent handling.",
+                "Google Lens": "It reads scenes and objects from camera input, so Computer Vision.",
+                "Spam Email Filter": "This is classification from past examples. Choose Machine Learning.",
+                "Chess AI": "Move evaluation and strategy rely on model-based decision patterns, usually ML.",
+                "Smart CCTV Camera": "Video event recognition points to Computer Vision.",
+                "Human-like Robot Teacher": "It combines movement, language interaction, and adaptive teaching: Robotics + NLP + ML.",
+                "Future Super Intelligence": "Treat this as full-spectrum intelligence. Type is Super AI with all branches."
+            };
+            return toolHints[q.tool] || getQuestionHint(q);
+        }
+
+        function speakHint(text) {
+            botBubble.textContent = text;
+            botBubble.classList.remove('show');
+            void botBubble.offsetWidth;
+            botBubble.classList.add('show');
+        }
+
+        function speakAnimeHint(text) {
+            if (!animeHintsEnabled) return;
+            animeBubble.textContent = text;
+            animeBubble.classList.remove('show');
+            void animeBubble.offsetWidth;
+            animeBubble.classList.add('show');
+        }
+
+        function setAnimeHintsEnabled(enabled) {
+            animeHintsEnabled = enabled;
+            hintToggleBtn.classList.toggle('active', enabled);
+            hintToggleBtn.setAttribute('aria-pressed', String(enabled));
+            animeGuide.classList.toggle('show', enabled);
+
+            if (enabled) {
+                if (nameModal.classList.contains('show')) {
+                    speakAnimeHint('I am ready. Start the game and I will guide each question.');
+                } else if (finalScreen.classList.contains('show')) {
+                    speakAnimeHint('Nice finish. Open review cards to learn from each answer.');
+                } else {
+                    speakAnimeHint(getAnimeHint(questions[currentQ]));
+                }
+            }
+        }
+
+        function startBotHints() {
+            if (botHintTimer) clearInterval(botHintTimer);
+            botHintTimer = setInterval(() => {
+                if (nameModal.classList.contains('show') || finalScreen.classList.contains('show')) return;
+                const q = questions[currentQ];
+                const options = [
+                    getQuestionHint(q),
+                    'Choose exactly one Type but one or more Branches if needed.',
+                    'Tip: if your branch set has an extra item, it will be marked wrong.'
+                ];
+                speakHint(options[Math.floor(Math.random() * options.length)]);
+            }, 7000);
+        }
+
+        botBubble.addEventListener('click', () => {
+            if (nameModal.classList.contains('show')) {
+                speakHint('Type your name and press Start Game.');
+                return;
+            }
+
+            if (finalScreen.classList.contains('show')) {
+                speakHint('Review your answers or play again for a new shuffled run.');
+                return;
+            }
+
+            const q = questions[currentQ];
+            const options = [
+                getQuestionHint(q),
+                'Exact branch match matters. Missing or extra branch selections become wrong.',
+                `Quick cue for ${q.tool}: check its main capability first, then map branch.`
+            ];
+            speakHint(options[Math.floor(Math.random() * options.length)]);
+        });
+
+        hintToggleBtn.addEventListener('click', () => {
+            setAnimeHintsEnabled(!animeHintsEnabled);
+        });
+
+        function showNameModal() {
+            nameModal.classList.add('show');
+            gameArea.style.display = 'none';
+            finalScreen.classList.remove('show');
+            speakHint('Enter your name to start. I will guide you through each question.');
+            playerNameInput.focus();
+        }
+
+        function beginGame() {
+            currentQ = 0;
+            score = 0;
+            answered = false;
+            answerLog = [];
+            selectedType = null;
+            selectedBranches = new Set();
+            scoreValEl.textContent = 0;
+            finalScreen.classList.remove('show');
+            reviewWrap.classList.remove('show');
+            reviewGrid.innerHTML = '';
+            reviewToggleBtn.textContent = '📋 REVIEW ANSWERS';
+            nameModal.classList.remove('show');
+            gameArea.style.display = 'flex';
+
+            subtitleText.innerHTML = `Player: <strong>${playerName}</strong> | Classify each AI tool by its <strong>Type</strong> and <strong>Branch</strong>`;
+
+            shuffleQuestions();
+            loadQuestion();
+            startBotHints();
+            speakHint(`Welcome ${playerName}! ${getQuestionHint(questions[currentQ])}`);
+            speakAnimeHint(getAnimeHint(questions[currentQ]));
+        }
+
+        function exitGame() {
+            const wantsExit = window.confirm('Exit this game now? Your current progress will be lost.');
+            if (!wantsExit) return;
+
+            closeModal();
+            currentQ = 0;
+            score = 0;
+            answered = false;
+            answerLog = [];
+            selectedType = null;
+            selectedBranches = new Set();
+            scoreValEl.textContent = 0;
+            reviewWrap.classList.remove('show');
+            reviewGrid.innerHTML = '';
+            reviewToggleBtn.textContent = '📋 REVIEW ANSWERS';
+            subtitleText.innerHTML = 'Classify each AI tool by its <strong>Type</strong> and <strong>Branch</strong>';
+            playerNameInput.value = playerName;
+            progressFill.style.width = '10%';
+            showNameModal();
+        }
+
+        nameForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const cleaned = playerNameInput.value.trim().replace(/\s+/g, ' ');
+            if (!cleaned) {
+                nameError.textContent = 'Please enter your name to start.';
+                return;
+            }
+
+            playerName = cleaned;
+            nameError.textContent = '';
+            beginGame();
+        });
+
+        // ─────────────────────────────────────────
+        // OPTION CLICK
+        // ─────────────────────────────────────────
+        document.querySelectorAll('.opt-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (answered) return;
+                const group = btn.dataset.group;
+                const val = btn.dataset.val;
+
+                if (group === 'type') {
+                    // Keep type single-select
+                    document.querySelectorAll('.opt-btn[data-group="type"]').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedType = val;
+                }
+
+                if (group === 'branch') {
+                    // Allow branch multi-select
+                    if (selectedBranches.has(val)) {
+                        selectedBranches.delete(val);
+                        btn.classList.remove('selected');
+                    } else {
+                        selectedBranches.add(val);
+                        btn.classList.add('selected');
+                    }
+                }
+
+                // Enable submit only when both selected
+                submitBtn.disabled = !(selectedType && selectedBranches.size > 0);
+            });
+        });
+
+        // ─────────────────────────────────────────
+        // SUBMIT
+        // ─────────────────────────────────────────
+        submitBtn.addEventListener('click', () => {
+            if (answered) return;
+            answered = true;
+            submitBtn.disabled = true;
+
+            const q = questions[currentQ];
+            const expectedBranches = getExpectedBranches(q);
+            const typeOK = selectedType === q.type;
+            const branchOK =
+                expectedBranches.length === selectedBranches.size &&
+                expectedBranches.every(b => selectedBranches.has(b));
+            const allOK = typeOK && branchOK;
+
+            answerLog.push({
+                questionIndex: currentQ,
+                tool: q.tool,
+                isCorrect: allOK,
+                selectedType,
+                selectedBranches: Array.from(selectedBranches),
+                correctType: q.type,
+                correctBranches: expectedBranches
+            });
+
+            if (allOK) {
+                score++;
+                scoreValEl.textContent = score;
+                showModal(true, q);
+                launchConfetti();
+            } else {
+                showModal(false, q);
+                modalBox.classList.add('shake');
+                setTimeout(() => modalBox.classList.remove('shake'), 500);
+            }
+        });
+
+        // ─────────────────────────────────────────
+        // MODAL
+        // ─────────────────────────────────────────
+        function showModal(correct, q) {
+            const branchText = getExpectedBranches(q).join(' + ');
+            if (correct) {
+                modalEmoji.textContent = '🎉';
+                modalTitle.textContent = 'Correct! Great Job!';
+                modalTitle.className = 'modal-title correct';
+                modalSub.innerHTML = `<strong>${q.tool}</strong> is <strong>${q.type}</strong> → <strong>${branchText}</strong>`;
+                modalActionBtn.textContent = currentQ < questions.length - 1 ? 'NEXT →' : 'SEE RESULTS';
+                modalActionBtn.className = 'modal-btn next-btn';
+                modalActionBtn.onclick = nextQuestion;
+            } else {
+                modalEmoji.textContent = '😢';
+                modalTitle.textContent = 'Not Quite!';
+                modalTitle.className = 'modal-title wrong';
+                modalSub.innerHTML = `The correct answer is:<br><strong>${q.type}</strong> → <strong>${branchText}</strong><br><br>Keep going, you've got this!`;
+                modalActionBtn.textContent = currentQ < questions.length - 1 ? 'NEXT →' : 'SEE RESULTS';
+                modalActionBtn.className = 'modal-btn retry-btn';
+                modalActionBtn.onclick = nextQuestion;
+            }
+            modal.classList.add('show');
+        }
+
+        function closeModal() { modal.classList.remove('show'); }
+
+        // ─────────────────────────────────────────
+        // NEXT QUESTION
+        // ─────────────────────────────────────────
+        function nextQuestion() {
+            closeModal();
+            currentQ++;
+            if (currentQ >= questions.length) {
+                showFinalScreen();
+                return;
+            }
+            loadQuestion();
+        }
+
+        // ─────────────────────────────────────────
+        // LOAD QUESTION
+        // ─────────────────────────────────────────
+        function loadQuestion() {
+            answered = false;
+            selectedType = null;
+            selectedBranches = new Set();
+            submitBtn.disabled = true;
+
+            const q = questions[currentQ];
+            toolNameEl.textContent = q.tool;
+            qLabelEl.textContent = `Question ${currentQ + 1} of ${questions.length}`;
+            progressFill.style.width = `${((currentQ + 1) / questions.length) * 100}%`;
+            speakHint(getQuestionHint(q));
+            speakAnimeHint(getAnimeHint(q));
+
+            // Reset buttons
+            document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+
+            // Animate card
+            const card = document.getElementById('tool-card');
+            card.style.opacity = 0;
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'opacity .4s ease, transform .4s ease';
+                card.style.opacity = 1;
+                card.style.transform = 'translateY(0)';
+            }, 50);
+        }
+
+        // ─────────────────────────────────────────
+        // FINAL SCREEN
+        // ─────────────────────────────────────────
+        function showFinalScreen() {
+            gameArea.style.display = 'none';
+            finalScreen.classList.add('show');
+            finalScore.textContent = `${score} / ${questions.length}`;
+            progressFill.style.width = '100%';
+
+            const pct = score / questions.length;
+            if (pct === 1) {
+                finalTrophy.textContent = '🏆';
+                finalMsg.textContent = 'PERFECT SCORE! You are an AI Classification Master! Incredible work.';
+            } else if (pct >= .7) {
+                finalTrophy.textContent = '🌟';
+                finalMsg.textContent = 'Great job! You have a solid understanding of AI Types and Branches. A little more practice and you will be perfect!';
+            } else if (pct >= .4) {
+                finalTrophy.textContent = '💪';
+                finalMsg.textContent = 'Not bad! Review the Types and Branches once more and try again. You are getting there!';
+            } else {
+                finalTrophy.textContent = '📚';
+                finalMsg.textContent = 'Keep studying! AI classification takes time to master. Review the material and give it another shot!';
+            }
+            renderReviewCards();
+            speakHint('Nice run. Open review cards to see where you can improve.');
+            speakAnimeHint('Review each card and compare your selected branches with the correct form.');
+            launchConfetti();
+        }
+
+        function renderReviewCards() {
+            reviewGrid.innerHTML = '';
+            reviewWrap.classList.remove('show');
+            reviewToggleBtn.textContent = '📋 REVIEW ANSWERS';
+
+            answerLog.forEach((item, i) => {
+                const card = document.createElement('details');
+                card.className = 'review-card';
+                card.innerHTML = `
+            <summary class="review-summary">
+                <div class="review-left">
+                    <span class="review-index">Q${i + 1}</span>
+                    <span class="review-tool">${item.tool}</span>
+                </div>
+                <span class="review-status ${item.isCorrect ? 'correct' : 'wrong'}">${item.isCorrect ? 'Correct' : 'Needs Fix'}</span>
+            </summary>
+            <div class="review-body">
+                <div class="review-row"><span class="review-label">Your Answer</span><span class="review-value">${item.selectedType || 'Not selected'} -> ${formatBranchList(item.selectedBranches)}</span></div>
+                <div class="review-row"><span class="review-label">Correct Form</span><span class="review-value">${item.correctType} -> ${formatBranchList(item.correctBranches)}</span></div>
+                <div class="review-reason"><strong>Reasoning:</strong> ${getReasoning(questions[item.questionIndex])}</div>
+            </div>
+        `;
+                reviewGrid.appendChild(card);
+            });
+        }
+
+        function toggleReview() {
+            reviewWrap.classList.toggle('show');
+            reviewToggleBtn.textContent = reviewWrap.classList.contains('show')
+                ? '📋 HIDE REVIEW'
+                : '📋 REVIEW ANSWERS';
+        }
+
+        // ─────────────────────────────────────────
+        // RESTART
+        // ─────────────────────────────────────────
+        function restartGame() {
+            beginGame();
+        }
+
+        // ─────────────────────────────────────────
+        // CONFETTI
+        // ─────────────────────────────────────────
+        function launchConfetti() {
+            const colors = ['#00e5ff', '#7c3aed', '#f59e0b', '#10b981', '#ef4444', '#f472b6', '#fff'];
+            for (let i = 0; i < 70; i++) {
+                const el = document.createElement('div');
+                el.className = 'confetti-piece';
+                el.style.cssText = `
+      left: ${Math.random() * 100}vw;
+      background: ${colors[Math.floor(Math.random() * colors.length)]};
+      width: ${6 + Math.random() * 8}px;
+      height: ${10 + Math.random() * 10}px;
+      animation-duration: ${1.2 + Math.random() * 1}s;
+      animation-delay: ${Math.random() * .5}s;
+      border-radius: ${Math.random() > .5 ? '50%' : '2px'};
+    `;
+                document.body.appendChild(el);
+                el.addEventListener('animationend', () => el.remove());
+            }
+        }
+
+        // ─────────────────────────────────────────
+        // PARTICLES (background)
+        // ─────────────────────────────────────────
+        (function initParticles() {
+            const canvas = document.getElementById('particles');
+            const ctx = canvas.getContext('2d');
+            let W, H, particles;
+
+            function resize() {
+                W = canvas.width = window.innerWidth;
+                H = canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            function createParticles(n) {
+                return Array.from({ length: n }, () => ({
+                    x: Math.random() * W, y: Math.random() * H,
+                    r: .5 + Math.random() * 1.5,
+                    vx: (Math.random() - .5) * .3,
+                    vy: (Math.random() - .5) * .3,
+                    a: .2 + Math.random() * .5
+                }));
+            }
+            particles = createParticles(90);
+
+            function draw() {
+                ctx.clearRect(0, 0, W, H);
+                particles.forEach(p => {
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+                    if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(0,229,255,${p.a})`;
+                    ctx.fill();
+                });
+                // Draw lines between close particles
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 100) {
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.strokeStyle = `rgba(0,229,255,${(1 - dist / 100) * .12})`;
+                            ctx.lineWidth = .5;
+                            ctx.stroke();
+                        }
+                    }
+                }
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+
+        // Init
+        showNameModal();
+    </script>
+</body>
+
+</html>
