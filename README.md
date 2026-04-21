@@ -25,7 +25,7 @@ A fun browser quiz where students classify popular AI tools by:
 ✅ Exit game anytime  
 ✅ Final score screen  
 ✅ Review answers with reasoning  
-✅ Works fully offline  
+ 
 
 ---
 
