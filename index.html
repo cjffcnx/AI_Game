@@ -1387,6 +1387,18 @@
         }
 
         function getQuestionHint(q) {
+            const toolHints = {
+                "ChatGPT": "ChatGPT is Narrow AI, and its answer needs all three branches: Machine Learning, NLP, and Computer Vision.",
+                "Self Driving Car": "Self Driving Car is Narrow AI, and it combines Machine Learning, Computer Vision, and Robotics.",
+                "Siri / Alexa": "Siri / Alexa is Narrow AI, and it mixes NLP with Machine Learning.",
+                "Human-like Robot Teacher": "This is a hypothetical General AI case, so it combines Robotics, NLP, and Machine Learning.",
+                "Future Super Intelligence": "This is the hypothetical Super AI case, and it uses all branches."
+            };
+
+            if (toolHints[q.tool]) {
+                return toolHints[q.tool];
+            }
+
             const branches = getExpectedBranches(q);
             if (branches.length > 1) return 'This tool blends multiple branches. Select every matching branch, no extras.';
             if (q.type === 'Super AI (Hypothetical)') return 'Only one tool is Super AI. Think futuristic and all-branch intelligence.';
